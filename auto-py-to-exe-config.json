@@ -1,0 +1,73 @@
+{
+  "version": "auto-py-to-exe-configuration_v1",
+  "pyinstaller_options": [
+    {
+      "optionDest": "filenames",
+      "value": "main.py"
+    },
+    {
+      "optionDest": "onefile",
+      "value": true
+    },
+    {
+      "optionDest": "console",
+      "value": false
+    },
+    {
+      "optionDest": "name",
+      "value": "TweetScraper"
+    },
+    {
+      "optionDest": "ascii",
+      "value": false
+    },
+    {
+      "optionDest": "clean_build",
+      "value": true
+    },
+    {
+      "optionDest": "strip",
+      "value": false
+    },
+    {
+      "optionDest": "noupx",
+      "value": false
+    },
+    {
+      "optionDest": "uac_admin",
+      "value": false
+    },
+    {
+      "optionDest": "uac_uiaccess",
+      "value": false
+    },
+    {
+      "optionDest": "win_private_assemblies",
+      "value": false
+    },
+    {
+      "optionDest": "win_no_prefer_redirects",
+      "value": false
+    },
+    {
+      "optionDest": "bootloader_ignore_signals",
+      "value": false
+    },
+    {
+      "optionDest": "disable_windowed_traceback",
+      "value": false
+    },
+    {
+      "optionDest": "hiddenimports",
+      "value": "PyQt5.QtCore,PyQt5.QtGui,PyQt5.QtWidgets,selenium,webdriver_manager,pandas,openpyxl"
+    },
+    {
+      "optionDest": "datas",
+      "value": "requirements.txt;."
+    }
+  ],
+  "nonPyinstallerOptions": {
+    "increaseRecursionLimit": true,
+    "manualArguments": ""
+  }
+}

@@ -1,0 +1,29 @@
+# Tweet Scraper Enhanced Edition - Requirements
+# Core GUI Framework
+PyQt5>=5.15.0
+
+# Web Scraping
+selenium>=4.0.0
+webdriver-manager>=3.8.0
+
+# Data Processing
+pandas>=1.3.0
+openpyxl>=3.0.0  # For Excel export
+
+# Additional libraries for building executable
+pyinstaller>=5.0.0
+auto-py-to-exe>=2.20.0
+
+# Built-in Python modules (no installation needed):
+# - hashlib (for hash generation)
+# - sqlite3 (for database operations) 
+# - difflib (for similarity matching)
+# - json (for JSON operations)
+# - os (for file operations)
+# - time, datetime (for time operations)
+# - threading (for multi-threading)
+# - urllib.parse (for URL encoding)
+# - typing (for type hints)
+
+# Installation command:
+# pip install -r requirements.txt
