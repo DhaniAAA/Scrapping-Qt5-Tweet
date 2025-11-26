@@ -1,2 +1,54 @@
+# Sensitive files
 token.md
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# PyInstaller
+build/
+dist/
+*.spec.bak
+
+# Database
+*.db
+*.db-journal
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.old
+*.md
+# Output files (optional - uncomment if you don't want to track output)
+# output/
+# tweets_*.csv
+# tweets_*.json
+# tweets_*.xlsx
+
+# Test files (optional - uncomment if you don't want to track)
+# test_imports.py
