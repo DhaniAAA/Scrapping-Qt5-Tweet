@@ -35,7 +35,9 @@ def scrape_tweets(
     signals: 'LoggerSignals',
     stop_event: Event,
     deduplicator: AdvancedDeduplicator = None,
-    progress_tracker: ProgressTracker = None
+    progress_tracker: ProgressTracker = None,
+    lock: Any = None,
+    worker_id: int = 0
 ) -> List[Dict[str, Any]]:
     """
     Scrape tweets from X.com based on search query.
@@ -49,24 +51,28 @@ def scrape_tweets(
         stop_event: Threading event to stop scraping
         deduplicator: Deduplication system instance
         progress_tracker: Progress tracking instance
+        lock: Threading lock for thread safety
+        worker_id: ID of the worker thread (0 for main thread)
 
     Returns:
         List of tweet dictionaries
     """
+    prefix = f"[Worker {worker_id}] " if worker_id > 0 else ""
+
     search_url = f"https://x.com/search?q={query}&src=typed_query"
     if search_type == 'latest':
         search_url += "&f=live"
 
-    signals.log_signal.emit(f"Mengunjungi halaman pencarian: {search_url}")
+    signals.log_signal.emit(f"{prefix}Mengunjungi halaman pencarian: {search_url}")
     driver.get(search_url)
 
     try:
         WebDriverWait(driver, WEBDRIVER_WAIT_TIMEOUT).until(
             EC.presence_of_element_located((By.XPATH, "//article[@data-testid='tweet']"))
         )
-        signals.log_signal.emit("Konten tweet terdeteksi. Memulai proses pengambilan data.")
+        signals.log_signal.emit(f"{prefix}Konten tweet terdeteksi. Memulai proses pengambilan data.")
     except TimeoutException:
-        signals.log_signal.emit("Batas waktu menunggu habis. Tidak ada tweet yang ditemukan.")
+        signals.log_signal.emit(f"{prefix}Batas waktu menunggu habis. Tidak ada tweet yang ditemukan.")
         return []
 
     tweets_data: Dict[str, Dict[str, Any]] = {}
@@ -82,40 +88,62 @@ def scrape_tweets(
     if progress_tracker is None:
         progress_tracker = ProgressTracker()
 
-    progress_tracker.start_session(target_count)
+    # Only start session tracking if running single threaded or if this is the main tracker
+    # For parallel, the main process handles overall progress
+    if worker_id == 0:
+        progress_tracker.start_session(target_count)
 
     while len(tweets_data) < target_count:
         if stop_event.is_set():
-            signals.log_signal.emit("Proses dihentikan oleh pengguna.")
+            signals.log_signal.emit(f"{prefix}Proses dihentikan oleh pengguna.")
             break
 
         # Update progress tracking
-        progress_tracker.update_progress(len(tweets_data), len(tweets_data))
-        stats = progress_tracker.get_statistics()
-
-        signals.log_signal.emit(f"\nTweet: {len(tweets_data)}/{target_count} | Kecepatan: {stats['current_speed']} | ETA: {stats['session_eta']} | Duplikat: {duplicate_count}")
-        signals.progress_signal.emit(len(tweets_data), target_count)
-        signals.stats_signal.emit(stats)
+        if worker_id == 0:
+            progress_tracker.update_progress(len(tweets_data), len(tweets_data))
+            stats = progress_tracker.get_statistics()
+            signals.log_signal.emit(f"\nTweet: {len(tweets_data)}/{target_count} | Kecepatan: {stats['current_speed']} | ETA: {stats['session_eta']} | Duplikat: {duplicate_count}")
+            signals.progress_signal.emit(len(tweets_data), target_count)
+            signals.stats_signal.emit(stats)
+        elif len(tweets_data) % 10 == 0 and len(tweets_data) > 0:
+             signals.log_signal.emit(f"{prefix}Collected: {len(tweets_data)}/{target_count}")
 
         tweet_articles = driver.find_elements(By.XPATH, "//article[@data-testid='tweet']")
 
         for article in tweet_articles:
             if stop_event.is_set():
                 break
-            parsed_data = parse_tweet_article(article, signals.log_signal.emit)
+
+            # Use a local log function that includes prefix
+            def log_func(msg):
+                # signals.log_signal.emit(f"{prefix}{msg}")
+                pass # Reduce verbosity during parsing
+
+            parsed_data = parse_tweet_article(article, log_func)
 
             if parsed_data:
                 # Check for duplicates using advanced system
-                is_dup, reason = deduplicator.is_duplicate(parsed_data)
+                # Use lock if provided
+                if lock:
+                    with lock:
+                        is_dup, reason = deduplicator.is_duplicate(parsed_data)
+                else:
+                    is_dup, reason = deduplicator.is_duplicate(parsed_data)
 
                 if not is_dup and parsed_data["url"] not in tweets_data:
                     tweets_data[parsed_data["url"]] = parsed_data
-                    deduplicator.add_tweet(parsed_data)
+
+                    if lock:
+                        with lock:
+                            deduplicator.add_tweet(parsed_data)
+                    else:
+                        deduplicator.add_tweet(parsed_data)
+
+                    # Emit data row signal for all workers
                     signals.data_row_signal.emit(parsed_data)
+
                 elif is_dup:
                     duplicate_count += 1
-                    if duplicate_count % 10 == 0:  # Log every 10 duplicates
-                        signals.log_signal.emit(f"Duplikat terdeteksi: {reason}")
                 elif parsed_data["url"] in tweets_data:
                     duplicate_count += 1
 

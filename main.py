@@ -1,5 +1,5 @@
 """
-Tweet Scraper - Enhanced Edition
+Tweet Scraper - Performance Edition v2.3.0
 Main entry point for the application.
 
 This is a powerful Twitter/X.com scraper with advanced features:
@@ -8,21 +8,23 @@ This is a powerful Twitter/X.com scraper with advanced features:
 - Dark/Light theme support
 - Multi-session scraping
 - Export to CSV, JSON, or Excel
+- **NEW v2.3.0** Multi-Threading (2-5x faster!)
 
-Author: Tweet Scraper Team
-Version: 2.0.0
+Author: DhaniAAA
+Version: 2.3.0
+
 """
 
 import sys
 from PyQt5.QtWidgets import QApplication
 
-from src.gui import TweetScraperGUI
+from src.gui.main_window_v2 import TweetScraperGUIV2
 
 
 def run_app():
-    """Initialize and run the Tweet Scraper application"""
+    """Initialize and run the Tweet Scraper application v2.3.0"""
     app = QApplication(sys.argv)
-    window = TweetScraperGUI()
+    window = TweetScraperGUIV2()
     window.show()
     sys.exit(app.exec_())
 

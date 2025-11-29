@@ -18,6 +18,7 @@ env/
 build/
 dist/
 *.spec.bak
+output/
 
 # Database
 *.db
@@ -44,6 +45,8 @@ desktop.ini
 *.bak
 *.old
 *.md
+build_readme.md
+*.csv
 # Output files (optional - uncomment if you don't want to track output)
 # output/
 # tweets_*.csv

@@ -45,14 +45,14 @@ DEFAULT_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.
 # ==================== Window Configuration ====================
 # Konfigurasi ukuran window GUI aplikasi
 
-WINDOW_WIDTH = 1400
+WINDOW_WIDTH = 1366
 """int: Lebar default window aplikasi (pixels)"""
 
-WINDOW_HEIGHT = 700
+WINDOW_HEIGHT = 768
 """int: Tinggi default window aplikasi (pixels)"""
 
-MIN_LEFT_PANEL_WIDTH = 800
+MIN_LEFT_PANEL_WIDTH = 768
 """int: Lebar minimum panel kiri (pixels)"""
 
-MAX_LEFT_PANEL_WIDTH = 1200
+MAX_LEFT_PANEL_WIDTH = 1366
 """int: Lebar maksimum panel kiri (pixels)"""
