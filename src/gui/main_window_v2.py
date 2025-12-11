@@ -9,10 +9,11 @@ from PyQt5.QtWidgets import (
     QPushButton, QTextEdit, QSpinBox, QGridLayout, QGroupBox,
     QTabWidget, QTableWidget, QTableWidgetItem, QProgressBar,
     QHBoxLayout, QCheckBox, QFrame, QSplitter, QStackedWidget,
-    QFileDialog, QMessageBox, QScrollArea
+    QFileDialog, QMessageBox, QScrollArea, QSystemTrayIcon, QStyle
 )
 from PyQt5.QtCore import QDate, Qt
 from PyQt5.QtGui import QFont
+import winsound
 
 from ..config.constants import WINDOW_WIDTH, WINDOW_HEIGHT, MIN_LEFT_PANEL_WIDTH, MAX_LEFT_PANEL_WIDTH
 from ..core import ThemeManager
@@ -46,6 +47,10 @@ class TweetScraperGUIV2(QWidget):
         self.signals.progress_signal.connect(self.update_progress)
         self.signals.data_row_signal.connect(self.add_data_row)
         self.signals.stats_signal.connect(self.update_stats)
+        self.signals.notification_signal.connect(self.show_notification)
+
+        # Setup System Tray
+        self.setup_tray_icon()
 
         # Setup UI
         self.init_ui()
@@ -76,6 +81,32 @@ class TweetScraperGUIV2(QWidget):
         self.stacked_widget.addWidget(self.analytics_page)
 
         main_layout.addWidget(self.stacked_widget)
+
+    def setup_tray_icon(self):
+        """Setup system tray icon untuk notifikasi."""
+        self.tray_icon = QSystemTrayIcon(self)
+
+        # Gunakan standard icon dari style bawaan jika tidak ada icon custom
+        icon = self.style().standardIcon(QStyle.SP_ComputerIcon)
+        self.tray_icon.setIcon(icon)
+        self.tray_icon.setVisible(True)
+        self.tray_icon.setToolTip("Tweet Scraper X.com")
+
+    def show_notification(self, title: str, message: str):
+        """Tampilkan notifikasi desktop dan mainkan suara."""
+        if self.tray_icon.isVisible():
+            self.tray_icon.showMessage(
+                title,
+                message,
+                QSystemTrayIcon.Information,
+                5000  # Durasi 5 detik
+            )
+
+            # Mainkan suara "SystemAsterisk" (Ting!)
+            try:
+                winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS | winsound.SND_ASYNC)
+            except Exception:
+                pass  # Ignore sound error
 
     def create_navbar(self):
         """Create navigation bar dengan menu buttons."""
@@ -793,6 +824,7 @@ class TweetScraperGUIV2(QWidget):
                             df.to_excel(filename, index=False)
 
                         self.signals.log_signal.emit(f"\n✅ Data disimpan ke: {filename} ({len(df)} tweet)")
+                        self.signals.notification_signal.emit("Scraping Selesai", f"Berhasil menyimpan {len(df)} tweet ke {filename}")
                     except Exception as e:
                         self.signals.log_signal.emit(f"\n!!! Gagal menyimpan file: {e} !!!")
                 else:
@@ -808,6 +840,7 @@ class TweetScraperGUIV2(QWidget):
 
         except Exception as e:
             self.signals.log_signal.emit(f"\n!!! Terjadi kesalahan fatal: {e} !!!")
+            self.signals.notification_signal.emit("Scraping Error", f"Gagal: {str(e)[:100]}...")
             import traceback
             self.signals.log_signal.emit(traceback.format_exc())
         finally:

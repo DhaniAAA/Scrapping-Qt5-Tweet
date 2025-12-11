@@ -12,3 +12,4 @@ class LoggerSignals(QObject):
     progress_signal = pyqtSignal(int, int)
     data_row_signal = pyqtSignal(dict)
     stats_signal = pyqtSignal(dict)  # Signal for progress statistics
+    notification_signal = pyqtSignal(str, str)  # title, message

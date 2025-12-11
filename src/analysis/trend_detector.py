@@ -74,7 +74,7 @@ class TrendDetector:
         # Extract words
         words = re.findall(r'\b\w+\b', text.lower())
 
-        # Load stopwords dari modified-lexicon_text.txt
+        # Load stopwords dari modified-lexicon_v2.txt
         stopwords = self._load_stopwords()
 
         keywords = [word for word in words if len(word) >= min_length and word not in stopwords]
@@ -82,7 +82,8 @@ class TrendDetector:
 
     def _load_stopwords(self) -> set:
         """
-        Load stopwords dari file modified-lexicon_text.txt.
+        Load basic stopwords (fallback/hardcoded list).
+        Previously attempted to load from modified-lexicon_v2.txt which was incorrect.
 
         Returns:
             set: Set of stopwords
@@ -96,10 +97,10 @@ class TrendDetector:
             import os
             # Try to find the file in current directory or parent directory
             possible_paths = [
-                'modified-lexicon_text.txt',
-                '../modified-lexicon_text.txt',
-                '../../modified-lexicon_text.txt',
-                os.path.join(os.path.dirname(__file__), '../../modified-lexicon_text.txt')
+                'modified-lexicon_v2.txt',
+                '../modified-lexicon_v2.txt',
+                '../../modified-lexicon_v2.txt',
+                os.path.join(os.path.dirname(__file__), '../../modified-lexicon_v2.txt')
             ]
 
             lexicon_path = None
@@ -131,7 +132,7 @@ class TrendDetector:
                 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has',
                 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may',
                 'might', 'can', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'of', 'with'
-            }
+        }
 
         # Cache the result
         self._stopwords_cache = stopwords

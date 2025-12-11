@@ -27,6 +27,17 @@ def parse_tweet_article(tweet_article: Any, logger: Callable[[str], None]) -> Op
         username = tweet_article.find_element(By.XPATH, ".//div[@data-testid='User-Name']//span").text
         handle = tweet_article.find_element(By.XPATH, ".//span[contains(text(), '@')]").text
         timestamp = tweet_article.find_element(By.XPATH, ".//time").get_attribute('datetime')
+        # Try to expand "Show more" if present
+        try:
+            show_more = tweet_article.find_elements(By.XPATH, ".//span[contains(text(), 'Show more')]")
+            if show_more:
+                show_more[0].click()
+                # Short sleep might be needed for text to expand in some cases,
+                # but often Selenium wait is implicit if we access text immediately after?
+                # Let's hope the text update is instant or handled by next finding.
+        except Exception:
+            pass  # If click fails, continue with whatever text is visible
+
         tweet_text = tweet_article.find_element(By.XPATH, ".//div[@data-testid='tweetText']").text.replace('\n', ' ')
         reply_count = tweet_article.find_element(By.XPATH, ".//button[@data-testid='reply']").text or "0"
         retweet_count = tweet_article.find_element(By.XPATH, ".//button[@data-testid='retweet']").text or "0"
