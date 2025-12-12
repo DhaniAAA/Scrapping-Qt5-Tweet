@@ -24,11 +24,11 @@ from .analytics_dashboard import AnalyticsDashboard
 
 
 class TweetScraperGUIV2(QWidget):
-    """Main GUI window v2.3.0 - Performance + Analytics Edition"""
+    """Main GUI window v2.3.3 - Performance + Analytics Edition"""
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Tweet Scraper X.com v2.3.0 - Performance + Analytics Edition")
+        self.setWindowTitle("Tweet Scraper X.com v2.3.3 - Performance + Analytics Edition")
         self.setGeometry(100, 100, WINDOW_WIDTH, WINDOW_HEIGHT)
 
         self.scraping_thread = None
@@ -140,7 +140,7 @@ class TweetScraperGUIV2(QWidget):
         self.navbar.setLayout(navbar_layout)
 
         # Logo/Title
-        title = QLabel("  Tweet Scraper v2.3.0")
+        title = QLabel("  Tweet Scraper v2.3.3")
         title.setStyleSheet("color: white; font-size: 16px; font-weight: bold; padding-left: 20px;")
         navbar_layout.addWidget(title)
 
@@ -484,7 +484,7 @@ class TweetScraperGUIV2(QWidget):
 
     def create_multithreading_section(self, parent_layout):
         """Create multi-threading configuration section"""
-        mt_group = QGroupBox("🚀 Multi-Threading (v2.3.0)")
+        mt_group = QGroupBox("🚀 Multi-Threading")
         mt_layout = QVBoxLayout()
         mt_layout.setSpacing(8)
         mt_group.setLayout(mt_layout)

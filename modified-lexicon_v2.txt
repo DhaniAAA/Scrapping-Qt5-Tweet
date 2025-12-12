@@ -10553,7 +10553,7 @@ worth it,5
 hidden gem,5
 aesthetic,4
 estetik,4
-vibes,0 good
+vibes,0
 vibes,4
 bad vibes,-4
 dark jokes,-2
@@ -10684,7 +10684,7 @@ aamiin,3
 takbiran,4
 lebaran,5
 mudik,3
-pulang
+pulang,2
 kampung,3
 macet,-5
 lancar,4

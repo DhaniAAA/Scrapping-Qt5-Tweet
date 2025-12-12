@@ -43,7 +43,7 @@ class SentimentAnalyzer:
             # Asumsi file berada di root project (2 level di atas file ini)
             current_dir = os.path.dirname(os.path.abspath(__file__))
             project_root = os.path.dirname(os.path.dirname(current_dir))
-            lexicon_path = os.path.join(project_root, 'modified-lexicon_v2.txt')
+            lexicon_path = os.path.join(project_root, './modified-lexicon_v2.txt')
 
         if not os.path.exists(lexicon_path):
             print(f"Warning: Lexicon file not found at {lexicon_path}")
