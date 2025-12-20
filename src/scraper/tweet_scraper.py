@@ -93,20 +93,39 @@ def scrape_tweets(
     if worker_id == 0:
         progress_tracker.start_session(target_count)
 
+    # Signal throttling configuration untuk mencegah GUI freeze
+    # Emit signals hanya setiap N tweet untuk mengurangi signal flooding
+    PROGRESS_UPDATE_INTERVAL = 5 if worker_id == 0 else 10  # Main thread lebih sering
+    DATA_ROW_BATCH_SIZE = 5  # Emit data row setiap 5 tweet
+    last_progress_count = 0
+    data_row_buffer = []
+
     while len(tweets_data) < target_count:
         if stop_event.is_set():
             signals.log_signal.emit(f"{prefix}Proses dihentikan oleh pengguna.")
             break
 
-        # Update progress tracking
-        if worker_id == 0:
-            progress_tracker.update_progress(len(tweets_data), len(tweets_data))
+        current_count = len(tweets_data)
+
+        # Update progress tracking dengan throttling
+        # Hanya emit signal jika sudah mencapai interval atau first/last update
+        should_emit_progress = (
+            current_count == 0 or  # First update
+            current_count >= target_count or  # Last update
+            (current_count - last_progress_count) >= PROGRESS_UPDATE_INTERVAL  # Interval reached
+        )
+
+        if worker_id == 0 and should_emit_progress:
+            progress_tracker.update_progress(current_count, current_count)
             stats = progress_tracker.get_statistics()
-            signals.log_signal.emit(f"\nTweet: {len(tweets_data)}/{target_count} | Kecepatan: {stats['current_speed']} | ETA: {stats['session_eta']} | Duplikat: {duplicate_count}")
-            signals.progress_signal.emit(len(tweets_data), target_count)
+            signals.log_signal.emit(f"\nTweet: {current_count}/{target_count} | Kecepatan: {stats['current_speed']} | ETA: {stats['session_eta']} | Duplikat: {duplicate_count}")
+            signals.progress_signal.emit(current_count, target_count)
             signals.stats_signal.emit(stats)
-        elif len(tweets_data) % 10 == 0 and len(tweets_data) > 0:
-             signals.log_signal.emit(f"{prefix}Collected: {len(tweets_data)}/{target_count}")
+            last_progress_count = current_count
+        elif worker_id > 0 and should_emit_progress:
+            # Worker threads: log lebih jarang untuk mengurangi noise
+            signals.log_signal.emit(f"{prefix}Progress: {current_count}/{target_count} tweets")
+            last_progress_count = current_count
 
         tweet_articles = driver.find_elements(By.XPATH, "//article[@data-testid='tweet']")
 
@@ -122,30 +141,58 @@ def scrape_tweets(
             parsed_data = parse_tweet_article(article, log_func)
 
             if parsed_data:
-                # Check for duplicates using advanced system
-                # Use lock if provided
+                # Track if this tweet should be added to buffer (decided inside lock)
+                should_add_to_buffer = False
+
+                # Atomic duplicate check and save operation
+                # Hold lock for entire operation to prevent race conditions
                 if lock:
                     with lock:
+                        # Check for duplicates
                         is_dup, reason = deduplicator.is_duplicate(parsed_data)
+
+                        # If not duplicate, add immediately within the same lock
+                        if not is_dup and parsed_data["url"] not in tweets_data:
+                            tweets_data[parsed_data["url"]] = parsed_data
+                            deduplicator.add_tweet(parsed_data)
+                            should_add_to_buffer = True  # Mark for buffering
+                        elif is_dup:
+                            duplicate_count += 1
+                        elif parsed_data["url"] in tweets_data:
+                            duplicate_count += 1
+
+                    # Buffer data for batched emission (OUTSIDE lock)
+                    # Emit dalam batch untuk mengurangi signal flooding ke GUI
+                    if should_add_to_buffer:
+                        data_row_buffer.append(parsed_data)
+
+                        # Emit batch jika buffer sudah penuh
+                        if len(data_row_buffer) >= DATA_ROW_BATCH_SIZE:
+                            for buffered_data in data_row_buffer:
+                                signals.data_row_signal.emit(buffered_data)
+                            data_row_buffer.clear()
                 else:
+                    # Single-threaded mode (no lock)
                     is_dup, reason = deduplicator.is_duplicate(parsed_data)
 
-                if not is_dup and parsed_data["url"] not in tweets_data:
-                    tweets_data[parsed_data["url"]] = parsed_data
-
-                    if lock:
-                        with lock:
-                            deduplicator.add_tweet(parsed_data)
-                    else:
+                    if not is_dup and parsed_data["url"] not in tweets_data:
+                        tweets_data[parsed_data["url"]] = parsed_data
                         deduplicator.add_tweet(parsed_data)
+                        should_add_to_buffer = True
+                    elif is_dup:
+                        duplicate_count += 1
+                    elif parsed_data["url"] in tweets_data:
+                        duplicate_count += 1
 
-                    # Emit data row signal for all workers
-                    signals.data_row_signal.emit(parsed_data)
+                    # Buffer untuk single-threaded mode juga
+                    if should_add_to_buffer:
+                        data_row_buffer.append(parsed_data)
 
-                elif is_dup:
-                    duplicate_count += 1
-                elif parsed_data["url"] in tweets_data:
-                    duplicate_count += 1
+                        # Emit batch jika buffer sudah penuh
+                        if len(data_row_buffer) >= DATA_ROW_BATCH_SIZE:
+                            for buffered_data in data_row_buffer:
+                                signals.data_row_signal.emit(buffered_data)
+                            data_row_buffer.clear()
 
         if len(tweets_data) >= target_count:
             break
@@ -162,6 +209,13 @@ def scrape_tweets(
         else:
             scroll_attempts = 0
         last_height = new_height
+
+    # Flush remaining buffered data rows sebelum selesai
+    # Emit sisa tweet yang masih ada di buffer
+    if data_row_buffer:
+        for buffered_data in data_row_buffer:
+            signals.data_row_signal.emit(buffered_data)
+        data_row_buffer.clear()
 
     signals.progress_signal.emit(len(tweets_data), target_count)
 

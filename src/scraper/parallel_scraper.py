@@ -96,6 +96,13 @@ class ParallelScraper:
         """
         self.log(f"🚀 Memulai parallel scraping dengan {self.num_threads} threads...")
 
+        # Pre-install ChromeDriver sebelum threads dimulai (thread-safe)
+        # Ini mencegah race condition saat semua worker mencoba install bersamaan
+        from .driver_setup import get_driver_path
+        self.log("📥 Menyiapkan ChromeDriver...")
+        get_driver_path()  # Install dan cache driver path
+        self.log("✅ ChromeDriver siap digunakan")
+
         # Populate task queue
         for idx, (start_date, end_date) in enumerate(date_ranges):
             task = {
