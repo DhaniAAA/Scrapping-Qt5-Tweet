@@ -37,7 +37,8 @@ def scrape_tweets(
     deduplicator: AdvancedDeduplicator = None,
     progress_tracker: ProgressTracker = None,
     lock: Any = None,
-    worker_id: int = 0
+    worker_id: int = 0,
+    total_scraped_so_far: int = 0
 ) -> List[Dict[str, Any]]:
     """
     Scrape tweets from X.com based on search query.
@@ -116,7 +117,7 @@ def scrape_tweets(
         )
 
         if worker_id == 0 and should_emit_progress:
-            progress_tracker.update_progress(current_count, current_count)
+            progress_tracker.update_progress(current_count, total_scraped_so_far + current_count)
             stats = progress_tracker.get_statistics()
             signals.log_signal.emit(f"\nTweet: {current_count}/{target_count} | Kecepatan: {stats['current_speed']} | ETA: {stats['session_eta']} | Duplikat: {duplicate_count}")
             signals.progress_signal.emit(current_count, target_count)
@@ -141,6 +142,10 @@ def scrape_tweets(
             parsed_data = parse_tweet_article(article, log_func)
 
             if parsed_data:
+                # Jika tweet ini sudah diproses di sesi/iterasi ini (karena DOM belum terhapus), skip
+                if parsed_data["url"] in tweets_data:
+                    continue
+
                 # Track if this tweet should be added to buffer (decided inside lock)
                 should_add_to_buffer = False
 
@@ -152,13 +157,11 @@ def scrape_tweets(
                         is_dup, reason = deduplicator.is_duplicate(parsed_data)
 
                         # If not duplicate, add immediately within the same lock
-                        if not is_dup and parsed_data["url"] not in tweets_data:
+                        if not is_dup:
                             tweets_data[parsed_data["url"]] = parsed_data
                             deduplicator.add_tweet(parsed_data)
                             should_add_to_buffer = True  # Mark for buffering
-                        elif is_dup:
-                            duplicate_count += 1
-                        elif parsed_data["url"] in tweets_data:
+                        else:
                             duplicate_count += 1
 
                     # Buffer data for batched emission (OUTSIDE lock)
@@ -175,13 +178,11 @@ def scrape_tweets(
                     # Single-threaded mode (no lock)
                     is_dup, reason = deduplicator.is_duplicate(parsed_data)
 
-                    if not is_dup and parsed_data["url"] not in tweets_data:
+                    if not is_dup:
                         tweets_data[parsed_data["url"]] = parsed_data
                         deduplicator.add_tweet(parsed_data)
                         should_add_to_buffer = True
-                    elif is_dup:
-                        duplicate_count += 1
-                    elif parsed_data["url"] in tweets_data:
+                    else:
                         duplicate_count += 1
 
                     # Buffer untuk single-threaded mode juga
@@ -298,6 +299,12 @@ def main_scraping_function(
             break
 
         chunk_end_date = current_date + datetime.timedelta(days=interval)
+        
+        # Batasi agar chunk_end_date tidak melebihi end_date + 1 (karena pencarian 'until' eksklusif)
+        max_end_date = end_date + datetime.timedelta(days=1)
+        if chunk_end_date > max_end_date:
+            chunk_end_date = max_end_date
+
         since_str = current_date.strftime('%Y-%m-%d')
         until_str = chunk_end_date.strftime('%Y-%m-%d')
 
@@ -308,9 +315,10 @@ def main_scraping_function(
         signals.log_signal.emit(f"\n--- Sesi {progress_tracker.session_number}/{total_sessions}: {since_str} hingga {until_str} ---")
         signals.log_signal.emit(f"Progress keseluruhan: {overall_stats['total_progress']} | ETA total: {overall_stats['total_eta']}")
 
-        raw_query = f"{keyword} lang:{lang} until:{until_str} since:{since_str}"
+        lang_filter = f" lang:{lang}" if lang else ""
+        raw_query = f"{keyword}{lang_filter} until:{until_str} since:{since_str}"
         query = quote(raw_query)
-        session_data = scrape_tweets(driver, query, target_per_session, search_type, signals, stop_event, deduplicator, progress_tracker)
+        session_data = scrape_tweets(driver, query, target_per_session, search_type, signals, stop_event, deduplicator, progress_tracker, total_scraped_so_far=len(all_scraped_data))
 
         if session_data:
             all_scraped_data.extend(session_data)

@@ -1,40 +1,53 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-# PyInstaller spec file for Tweet Scraper Enhanced Edition
-# Updated for refactored structure
 
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[
-        ('requirements.txt', '.'),
-        ('src', 'src'),  # Include the entire src directory
-    ],
+    datas=[('modified-lexicon_v2.txt', '.')],
     hiddenimports=[
-        'PyQt5.QtCore',
-        'PyQt5.QtGui',
-        'PyQt5.QtWidgets',
+        # PyQt5
+        'PyQt5.QtCore', 'PyQt5.QtGui', 'PyQt5.QtWidgets',
+        'PyQt5.QtPrintSupport', 'PyQt5.QtSvg',
+        # Selenium - Chrome
         'selenium',
+        'selenium.webdriver',
+        'selenium.webdriver.chrome',
+        'selenium.webdriver.chrome.webdriver',
+        'selenium.webdriver.chrome.service',
+        'selenium.webdriver.chrome.options',
+        'selenium.webdriver.chrome.remote_connection',
+        # Selenium - Common
+        'selenium.webdriver.common.by',
+        'selenium.webdriver.common.keys',
+        'selenium.webdriver.common.action_chains',
+        'selenium.webdriver.common.desired_capabilities',
+        'selenium.webdriver.common.options',
+        'selenium.webdriver.common.service',
+        'selenium.webdriver.common.utils',
+        # Selenium - Support
+        'selenium.webdriver.support',
+        'selenium.webdriver.support.ui',
+        'selenium.webdriver.support.wait',
+        'selenium.webdriver.support.expected_conditions',
+        # Selenium - Remote
+        'selenium.webdriver.remote.webdriver',
+        'selenium.webdriver.remote.webelement',
+        'selenium.webdriver.remote.command',
+        'selenium.webdriver.remote.remote_connection',
+        'selenium.webdriver.remote.errorhandler',
+        # Webdriver Manager
         'webdriver_manager',
-        'pandas',
-        'openpyxl',
-        'src',
-        'src.config',
-        'src.config.constants',
-        'src.core',
-        'src.core.deduplicator',
-        'src.core.progress_tracker',
-        'src.core.theme_manager',
-        'src.core.styles',
-        'src.core.styles.themes',
-        'src.scraper',
-        'src.scraper.driver_setup',
-        'src.scraper.tweet_parser',
-        'src.scraper.tweet_scraper',
-        'src.gui',
-        'src.gui.signals',
-        'src.gui.main_window',
+        'webdriver_manager.chrome',
+        'webdriver_manager.core.driver_cache',
+        'webdriver_manager.core.download_manager',
+        'webdriver_manager.core.os_manager',
+        # Data
+        'pandas', 'openpyxl', 'openpyxl.styles',
+        # Analytics
+        'matplotlib', 'matplotlib.pyplot', 'matplotlib.backends.backend_qt5agg',
+        'textblob',
     ],
     hookspath=[],
     hooksconfig={},
@@ -43,7 +56,6 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
-
 pyz = PYZ(a.pure)
 
 exe = EXE(
@@ -65,5 +77,4 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,  # Add icon path here if you have one
 )

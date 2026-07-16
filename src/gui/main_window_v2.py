@@ -374,12 +374,18 @@ class TweetScraperGUIV2(QWidget):
         self.keyword_input.setMinimumHeight(30)
         search_layout.addWidget(self.keyword_input)
 
-        # Language
-        lang_layout = QHBoxLayout() # Sub-layout untuk hemat tempat vertikal
-        lang_layout.addWidget(QLabel("Bahasa:"))
+        # Language (Opsional)
+        lang_layout = QHBoxLayout()  # Sub-layout untuk hemat tempat vertikal
+        self.lang_checkbox = QCheckBox("Bahasa:")
+        self.lang_checkbox.setChecked(True)
+        self.lang_checkbox.setToolTip("Centang untuk memfilter tweet berdasarkan bahasa (misal: id, en)\nKosongkan untuk mencari semua bahasa")
+        self.lang_checkbox.stateChanged.connect(self._on_lang_checkbox_changed)
+        lang_layout.addWidget(self.lang_checkbox)
+
         self.lang_input = QLineEdit("id")
         self.lang_input.setMinimumHeight(30)
-        self.lang_input.setFixedWidth(60)
+        self.lang_input.setFixedWidth(55)
+        self.lang_input.setToolTip("Kode bahasa: id (Indonesia), en (Inggris), dll.")
         lang_layout.addWidget(self.lang_input)
 
         # Search Type
@@ -392,6 +398,16 @@ class TweetScraperGUIV2(QWidget):
         search_layout.addLayout(lang_layout)
 
         return search_group
+
+    def _on_lang_checkbox_changed(self, state):
+        """Aktifkan/nonaktifkan field bahasa berdasarkan checkbox."""
+        from PyQt5.QtCore import Qt
+        enabled = (state == Qt.Checked)
+        self.lang_input.setEnabled(enabled)
+        if not enabled:
+            self.lang_input.setPlaceholderText("(semua bahasa)")
+        else:
+            self.lang_input.setPlaceholderText("")
 
     def create_date_section_widget(self):
         """Create date range section as a widget"""
@@ -723,7 +739,8 @@ class TweetScraperGUIV2(QWidget):
         start_date = self.start_date_input.date().toPyDate()
         end_date = self.end_date_input.date().toPyDate()
         interval = self.interval_input.value()
-        lang = self.lang_input.text().strip()
+        # Ambil lang hanya jika checkbox dicentang dan input tidak kosong
+        lang = self.lang_input.text().strip() if self.lang_checkbox.isChecked() else ""
         count = self.count_input.value()
         search_type = 'latest' if self.search_type_combo.currentIndex() == 1 else 'top'
         auth_token = self.cookie_input.text().strip()

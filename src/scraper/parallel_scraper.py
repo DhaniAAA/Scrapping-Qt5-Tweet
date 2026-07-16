@@ -234,7 +234,8 @@ class ParallelScraper:
         start_date_str = task['start_date'].strftime('%Y-%m-%d')
         end_date_str = task['end_date'].strftime('%Y-%m-%d')
 
-        raw_query = f"{task['keyword']} lang:{task['lang']} until:{end_date_str} since:{start_date_str}"
+        lang_filter = f" lang:{task['lang']}" if task.get('lang') else ""
+        raw_query = f"{task['keyword']}{lang_filter} until:{end_date_str} since:{start_date_str}"
         query_encoded = quote(raw_query)
 
         # Set auth cookie
